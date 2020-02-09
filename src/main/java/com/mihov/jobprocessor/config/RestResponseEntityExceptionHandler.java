@@ -1,5 +1,7 @@
-package com.mihov.jobprocessor;
+package com.mihov.jobprocessor.config;
 
+import com.mihov.jobprocessor.GraphContainsCycleException;
+import com.mihov.jobprocessor.TaskController;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
