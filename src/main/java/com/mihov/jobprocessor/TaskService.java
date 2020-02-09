@@ -1,6 +1,7 @@
 package com.mihov.jobprocessor;
 
 import com.mihov.jobprocessor.beans.InputTask;
+import com.mihov.jobprocessor.beans.Task;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -14,75 +15,75 @@ import java.util.*;
 public class TaskService{
 
   /**
-   * Process the input list of tasks and return a sorted list of task names.
-   * First step is to build a graph
-   * Then use modified DFS to implement a Topological Sort of the graph.
-   * If the graph contains cycles then it is not a Directed Acyclic Graph.
+   * The list of tasks and their dependencies is supposed to represent a Directed Acyclic Graph.
+   * So we need to find the topological sort of this graph.
+   * First we put the list in a map for faster lookup.
+   * Then use modified DFS to implement the topological sort.
+   * If the graph contains cycles then it is not a Directed Acyclic Graph and can not be topologically sorted.
    * In this case it can't be processed because we can not determine correctly the order of the tasks.
    *
-   * @param input The input list of tasks
-   * @return The topological sort of the task names.
+   * @param input The input list of tasks. It represents a reverted adjacency list the way it is given.
+   * @return The sorted tasks.
    */
-  public List<String> getSortedTaskNames(List<InputTask> input) {
+  public List<Task> sort(List<InputTask> input) {
 
-    final Map<String, Set<String>> graph = buildGraph(input);
+    final Map<String, InputTask> map = buildMap(input);
 
-    Stack<String> stack = new Stack<>();
     Set<String> visited = new HashSet<>();
     Set<String> processed = new HashSet<>();
+    List<Task> sorted = new ArrayList<>();
 
-    for (Map.Entry<String, Set<String>> edge : graph.entrySet()) {
-      if (!processed.contains(edge.getKey())) {
-        topologicalSort(edge.getKey(), graph, visited, processed, stack);
+    for (Map.Entry<String, InputTask> entry : map.entrySet()) {
+      if (!processed.contains(entry.getKey())) {
+        topologicalSort(entry.getKey(), map, visited, processed, sorted);
       }
     }
 
-    List<String> sortedNames = new ArrayList<>();
-    while (!stack.empty()) {
-      sortedNames.add(stack.pop());
-    }
-    return sortedNames;
+    return sorted;
   }
 
   /**
-   * Build an adjacency list representing the task graph using a map data structure
-   * @param list Input list of tasks
-   * @return HashMap(U, Set(V)) where U is a task that should be executed before the tasks in Set(V)
+   * Put the input data in a map for faster lookup and check for duplicated names
    */
-  private Map<String, Set<String>> buildGraph(List<InputTask> list) {
-    Map<String, Set<String>> graph = new HashMap<>();
+  private Map<String, InputTask> buildMap(List<InputTask> list) {
+    Map<String, InputTask> map = new HashMap<>();
     for (InputTask task : list) {
-      graph.putIfAbsent(task.getName(), new HashSet<>());
-      for (String dependency : task.getRequires()) {
-        graph.putIfAbsent(dependency, new HashSet<>());
-        graph.get(dependency).add(task.getName());
+      if (!map.containsKey(task.getName())) {
+        map.put(task.getName(), task);
+      }
+      else {
+        throw new IllegalArgumentException("List contains duplicated names!");
       }
     }
-    return graph;
+    return map;
   }
 
   /**
    * A recursive helper method to implement the topological sort.
-   * It uses 2 sets to mark the visited and processed tasks and a stack to store the order of the tasks.
+   * It uses 2 sets to mark the visited and processed tasks and a list to store the ordered tasks.
+   * Since we use a reverted adjacency list we don't need to put the sorted elements in a stack unlike the classical algorithm.
+   * We could use a straight list instead.
    */
-  private void topologicalSort(String task, Map<String, Set<String>> graph, Set<String> visited, Set<String> processed, Stack<String> stack) {
-    if (processed.contains(task)) {
+  private void topologicalSort(String name, Map<String, InputTask> map, Set<String> visited, Set<String> processed, List<Task> sorted) {
+    if (processed.contains(name)) {
       return;
     }
 
-    if (visited.contains(task)) {
+    if (visited.contains(name)) {
       throw new GraphContainsCycleException("This is not DAG!");
     }
 
-    visited.add(task);
+    visited.add(name);
 
-    for (String edge : graph.get(task)) {
-      topologicalSort(edge, graph, visited, processed, stack);
+    for (String vertice : map.get(name).getRequires()) {
+      topologicalSort(vertice, map, visited, processed, sorted);
     }
 
-    visited.remove(task);
-    processed.add(task);
-    stack.push(task);
+    visited.remove(name);
+    processed.add(name);
+
+    Task task = new Task(name, map.get(name).getCommand());
+    sorted.add(task);
   }
 
 }

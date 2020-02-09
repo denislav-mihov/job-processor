@@ -38,9 +38,9 @@ public class InputTask extends Task{
   @Override
   public String toString() {
     return "InputTask{" +
-      ", name='" + super.getName() + '\'' +
+      "name='" + super.getName() + '\'' +
       ", command='" + super.getCommand() + '\'' +
-      "requires=" + requires +
+      ", requires=" + requires +
       '}';
   }
 }

@@ -9,9 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -38,16 +36,10 @@ public class TaskController{
   @PostMapping("/sort")
   @ResponseStatus(HttpStatus.OK)
   public List<Task> sort(@RequestBody @Validated TaskList list) {
+
     logger.debug("Input list: {}", list);
 
-    Map<String, String> map = getRegister(list.getTasks());
-
-    List<String> sortedNames = taskService.getSortedTaskNames(list.getTasks());
-    logger.debug("Sorted task names: {}", sortedNames);
-
-    return sortedNames.stream()
-      .map(name -> new Task(name, map.get(name)))
-      .collect(Collectors.toList());
+    return taskService.sort(list.getTasks());
   }
 
   @PostMapping("/build")
@@ -56,35 +48,8 @@ public class TaskController{
 
     logger.debug("Input list: {}", list);
 
-    Map<String, String> map = getRegister(list.getTasks());
-
-    List<String> sortedNames = taskService.getSortedTaskNames(list.getTasks());
-    logger.debug("Sorted task names: {}", sortedNames);
-
-    StringBuilder sb = new StringBuilder();
-    for (String name : sortedNames) {
-      sb.append(map.get(name));
-      sb.append(NEW_LINE);
-    }
-    return sb.toString();
-  }
-
-  /**
-   * Prepare a mapping between the task names and commands.
-   * The dependencies are not included.
-   * @param list List of tasks
-   * @return HashMap(name, command)
-   */
-  private Map<String, String> getRegister(List<? extends Task> list) {
-    Map<String, String> map = new HashMap<>();
-    for (Task task : list) {
-      if (!map.containsKey(task.getName())) {
-        map.put(task.getName(), task.getCommand());
-      }
-      else if (!map.get(task.getName()).equals(task.getCommand())) {
-        throw new IllegalArgumentException("List contains duplicated task names!");
-      }
-    }
-    return map;
+    return taskService.sort(list.getTasks()).stream()
+      .map(Task::getCommand)
+      .collect(Collectors.joining(NEW_LINE, "#!/usr/bin/env bash\n\n", ""));
   }
 }

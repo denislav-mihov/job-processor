@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -37,28 +38,34 @@ public class TaskControllerTest{
 
     TaskList list = new TaskList();
     List<InputTask> tasks = new ArrayList<>();
-    tasks.add(new InputTask("task-1", "touch /tmp/file1"));
-    tasks.add(new InputTask("task-2", "cat /tmp/file1", Collections.singletonList("task-3")));
-    tasks.add(new InputTask("task-3", "echo 'Hello World!' > /tmp/file1", Collections.singletonList("task-1")));
-    tasks.add(new InputTask("task-4", "rm /tmp/file1", Arrays.asList("task-2", "task-3")));
+    tasks.add(new InputTask("t1", "cmd1"));
+    tasks.add(new InputTask("t2", "cmd2", Collections.singletonList("t3")));
+    tasks.add(new InputTask("t3", "cmd3", Collections.singletonList("t7")));
+    tasks.add(new InputTask("t4", "cmd4", Arrays.asList("t5", "t1")));
+    tasks.add(new InputTask("t5", "cmd5", Arrays.asList("t1", "t6")));
+    tasks.add(new InputTask("t6", "cmd6"));
+    tasks.add(new InputTask("t7", "cmd7", Arrays.asList("t6", "t8")));
+    tasks.add(new InputTask("t8", "cmd8", Arrays.asList("t5", "t4")));
     list.setTasks(tasks);
 
     mockMvc.perform(
       post("/tasks/sort")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(list))
-    ).andExpect(status().isOk());
+    ).andExpect(status().isOk())
+     .andExpect(jsonPath("$").isArray());
   }
 
   @Test
-  public void testSort_NOK() throws Exception {
+  public void testSort_NOK_exists_cycle() throws Exception {
 
     TaskList list = new TaskList();
     List<InputTask> tasks = new ArrayList<>();
-    tasks.add(new InputTask("task-1", "touch /tmp/file1"));
-    tasks.add(new InputTask("task-2", "cat /tmp/file1", Collections.singletonList("task-4")));
-    tasks.add(new InputTask("task-3", "echo 'Hello World!' > /tmp/file1", Collections.singletonList("task-1")));
-    tasks.add(new InputTask("task-4", "rm /tmp/file1", Arrays.asList("task-2", "task-3")));
+    tasks.add(new InputTask("t1", "cmd1"));
+    tasks.add(new InputTask("t2", "cmd2", Collections.singletonList("t3")));
+    tasks.add(new InputTask("t3", "cmd3", Collections.singletonList("t4")));
+    tasks.add(new InputTask("t4", "cmd4", Collections.singletonList("t2")));
+
     list.setTasks(tasks);
 
     mockMvc.perform(
@@ -83,11 +90,12 @@ public class TaskControllerTest{
       post("/tasks/build")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(list))
-    ).andExpect(status().isOk());
+    ).andExpect(status().isOk())
+      .andExpect(jsonPath("$").isNotEmpty());
   }
 
   @Test
-  public void testBuild_NOK() throws Exception {
+  public void testBuild_NOK_exists_cycle() throws Exception {
 
     TaskList list = new TaskList();
     List<InputTask> tasks = new ArrayList<>();

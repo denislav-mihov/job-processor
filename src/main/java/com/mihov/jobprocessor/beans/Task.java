@@ -39,20 +39,6 @@ public class Task{
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    Task task1 = (Task) o;
-    return Objects.equals(getName(), task1.getName()) &&
-      Objects.equals(getCommand(), task1.getCommand());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getName(), getCommand());
-  }
-
-  @Override
   public String toString() {
     return "Task{" +
       "name='" + name + '\'' +
